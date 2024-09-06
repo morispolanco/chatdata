@@ -25,24 +25,38 @@ def query_together_api(prompt, api_key):
     response = requests.post(url, headers=headers, json=data)
     return response.json()['output']['choices'][0]['text']
 
+# Función para leer el archivo Excel
+def read_excel_file(file):
+    try:
+        # Intenta leer el archivo como .xlsx
+        return pd.read_excel(file, engine='openpyxl')
+    except Exception as e:
+        try:
+            # Si falla, intenta leer como .xls
+            return pd.read_excel(file, engine='xlrd')
+        except Exception as e:
+            st.error(f"No se pudo leer el archivo. Error: {e}")
+            return None
+
 # Cargar el archivo Excel
 uploaded_file = st.file_uploader("Carga tu archivo Excel", type=["xlsx", "xls"])
 
 if uploaded_file is not None:
     # Leer el archivo Excel
-    df = pd.read_excel(uploaded_file)
-    st.success("Archivo cargado correctamente!")
+    df = read_excel_file(uploaded_file)
+    if df is not None:
+        st.success("Archivo cargado correctamente!")
 
-    # Mostrar las primeras filas del DataFrame
-    st.subheader("Vista previa de los datos:")
-    st.dataframe(df.head())
+        # Mostrar las primeras filas del DataFrame
+        st.subheader("Vista previa de los datos:")
+        st.dataframe(df.head())
 
-    # Área para ingresar la pregunta
-    user_question = st.text_input("Haz una pregunta sobre los datos:")
+        # Área para ingresar la pregunta
+        user_question = st.text_input("Haz una pregunta sobre los datos:")
 
-    if user_question:
-        # Preparar el prompt para la API
-        prompt = f"""Basado en los siguientes datos:
+        if user_question:
+            # Preparar el prompt para la API
+            prompt = f"""Basado en los siguientes datos:
 
 {df.head().to_string()}
 
@@ -51,16 +65,16 @@ Por favor, responde a la siguiente pregunta:
 
 Proporciona una respuesta concisa y precisa basada únicamente en la información disponible en los datos proporcionados."""
 
-        # Obtener la clave API de los secrets de Streamlit
-        api_key = st.secrets["TOGETHER_API_KEY"]
+            # Obtener la clave API de los secrets de Streamlit
+            api_key = st.secrets["TOGETHER_API_KEY"]
 
-        # Realizar la consulta a la API
-        with st.spinner("Analizando tu pregunta..."):
-            response = query_together_api(prompt, api_key)
+            # Realizar la consulta a la API
+            with st.spinner("Analizando tu pregunta..."):
+                response = query_together_api(prompt, api_key)
 
-        # Mostrar la respuesta
-        st.subheader("Respuesta:")
-        st.write(response)
+            # Mostrar la respuesta
+            st.subheader("Respuesta:")
+            st.write(response)
 
 else:
     st.info("Por favor, carga un archivo Excel para comenzar.")
@@ -68,7 +82,7 @@ else:
 # Instrucciones de uso
 st.sidebar.header("Instrucciones de uso")
 st.sidebar.markdown("""
-1. Carga tu archivo Excel usando el botón de carga.
+1. Carga tu archivo Excel (.xlsx o .xls) usando el botón de carga.
 2. Una vez cargado, verás una vista previa de los datos.
 3. Escribe tu pregunta en el campo de texto.
 4. La aplicación analizará los datos y responderá a tu pregunta.
