@@ -8,9 +8,17 @@ together_api_key = st.secrets["together"]["api_key"]
 
 # Función para cargar el archivo Excel
 def load_excel(file):
-    # Usar openpyxl para manejar archivos .xlsx
-    df = pd.read_excel(file, engine='openpyxl')
-    return df
+    try:
+        # Verificar si el archivo es un Excel
+        if file.name.endswith('.xlsx') or file.name.endswith('.xls'):
+            df = pd.read_excel(file, engine='openpyxl')
+            return df
+        else:
+            st.error("Por favor, sube un archivo Excel válido (.xlsx o .xls).")
+            return None
+    except Exception as e:
+        st.error(f"Error al cargar el archivo: {str(e)}")
+        return None
 
 # Función para hacer preguntas a la API de Together usando curl
 def ask_together_with_curl(api_key, question, context):
@@ -54,21 +62,23 @@ st.title("Preguntas sobre un archivo Excel")
 uploaded_file = st.file_uploader("Carga un archivo Excel", type=["xlsx", "xls"])
 
 if uploaded_file is not None:
-    # Mostrar datos cargados
+    # Intentar cargar los datos
     df = load_excel(uploaded_file)
-    st.write("Datos cargados:")
-    st.dataframe(df)
     
-    # Preguntar al usuario
-    user_question = st.text_input("Haz una pregunta sobre los datos")
-    
-    if user_question:
-        # Convertir el DataFrame en contexto en texto
-        context = df.to_string()
+    if df is not None:
+        st.write("Datos cargados:")
+        st.dataframe(df)
         
-        # Hacer la pregunta a la API
-        answer = ask_together_with_curl(together_api_key, user_question, context)
+        # Preguntar al usuario
+        user_question = st.text_input("Haz una pregunta sobre los datos")
         
-        # Mostrar la respuesta
-        st.write("Respuesta:")
-        st.write(answer)
+        if user_question:
+            # Convertir el DataFrame en contexto en texto
+            context = df.to_string()
+            
+            # Hacer la pregunta a la API
+            answer = ask_together_with_curl(together_api_key, user_question, context)
+            
+            # Mostrar la respuesta
+            st.write("Respuesta:")
+            st.write(answer)
