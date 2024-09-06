@@ -22,8 +22,28 @@ def query_together_api(prompt, api_key):
         "max_tokens": 512,
         "temperature": 0.7
     }
-    response = requests.post(url, headers=headers, json=data)
-    return response.json()['output']['choices'][0]['text']
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()  # Esto lanzará una excepción para códigos de estado HTTP no exitosos
+        response_json = response.json()
+        
+        # Añadir depuración
+        st.write("Respuesta completa de la API:", response_json)
+        
+        if 'output' in response_json and 'choices' in response_json['output'] and len(response_json['output']['choices']) > 0:
+            return response_json['output']['choices'][0]['text']
+        else:
+            st.error("La respuesta de la API no tiene el formato esperado.")
+            return None
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error al hacer la solicitud a la API: {e}")
+        return None
+    except json.JSONDecodeError:
+        st.error("Error al decodificar la respuesta JSON de la API.")
+        return None
+    except Exception as e:
+        st.error(f"Error inesperado: {e}")
+        return None
 
 # Función para leer el archivo Excel
 def read_excel_file(file):
@@ -73,8 +93,9 @@ Proporciona una respuesta concisa y precisa basada únicamente en la informació
                 response = query_together_api(prompt, api_key)
 
             # Mostrar la respuesta
-            st.subheader("Respuesta:")
-            st.write(response)
+            if response:
+                st.subheader("Respuesta:")
+                st.write(response)
 
 else:
     st.info("Por favor, carga un archivo Excel para comenzar.")
