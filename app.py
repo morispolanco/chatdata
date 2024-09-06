@@ -8,7 +8,8 @@ together_api_key = st.secrets["together"]["api_key"]
 
 # Función para cargar el archivo Excel
 def load_excel(file):
-    df = pd.read_excel(file)
+    # Usar openpyxl para manejar archivos .xlsx
+    df = pd.read_excel(file, engine='openpyxl')
     return df
 
 # Función para hacer preguntas a la API de Together usando curl
